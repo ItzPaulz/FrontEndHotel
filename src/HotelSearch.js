@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { Form, Button, Row, Col, Card, Spinner, Alert } from 'react-bootstrap';
 
 function priceLevelToString(priceLevel) {
@@ -24,12 +23,20 @@ function HotelSearch() {
     setLoading(true);
     setError('');
     setHotels([]);
+
     try {
-      const res = await axios.get(`http://localhost:8080/hoteles?destino=${encodeURIComponent(city)}`);
-      setHotels(res.data);
+      const response = await fetch(`http://localhost:8082/api/hoteles/buscar?destino=${encodeURIComponent(city)}`);
+      const data = await response.json();
+
+      if (data.results) {
+        setHotels(data.results);
+      } else {
+        setError('No se encontraron resultados.');
+      }
     } catch (err) {
       setError('No se pudieron obtener los hoteles. Verifica el backend.');
     }
+
     setLoading(false);
   };
 
@@ -41,7 +48,7 @@ function HotelSearch() {
           <Col md={8}>
             <Form.Control
               type="text"
-              placeholder="Ej: guayaquil,ecuador"
+              placeholder="Ej: Guayaquil, Ecuador"
               value={city}
               onChange={e => setCity(e.target.value)}
               required
@@ -54,7 +61,9 @@ function HotelSearch() {
           </Col>
         </Row>
       </Form>
+
       {error && <Alert variant="danger" className="mt-3">{error}</Alert>}
+
       <Row className="mt-4">
         {hotels.map((hotel, idx) => (
           <Col md={4} key={idx} className="mb-3">
@@ -62,18 +71,10 @@ function HotelSearch() {
               <Card.Body>
                 <Card.Title>{hotel.name}</Card.Title>
                 <Card.Text>
-                  <b>Precio:</b> {priceLevelToString(hotel.priceLevel)}<br />
-                  <b>Estrellas:</b> {hotel.rating >= 0 ? hotel.rating : 'N/A'}<br />
-                  <b>Calificaciones:</b> {hotel.userRatingsTotal >= 0 ? hotel.userRatingsTotal : 'N/A'}
+                  <b>Precio:</b> {priceLevelToString(hotel.price_level)}<br />
+                  <b>Estrellas:</b> {hotel.rating ?? 'N/A'}<br />
+                  <b>Calificaciones:</b> {hotel.user_ratings_total ?? 'N/A'}
                 </Card.Text>
-                {hotel.reviews && hotel.reviews.length > 0 && (
-                  <div>
-                    <b>Reseñas:</b>
-                    <ul>
-                      {hotel.reviews.map((r, i) => <li key={i}>{r}</li>)}
-                    </ul>
-                  </div>
-                )}
               </Card.Body>
             </Card>
           </Col>
